@@ -1,0 +1,42 @@
+version: "3"
+services:
+  redis:
+    image: redis:alpine
+    container_name: otm-redis
+  mariadb:
+    image: mariadb:10.4
+    container_name: otm-mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=otm-db
+      - MYSQL_USER=default
+      - MYSQL_PASSWORD=secret
+    ports:
+      - "8003:3306"
+  nginx:
+    image: nginx:alpine
+    container_name: otm-nginx
+    working_dir: /usr/src/otm-api
+    volumes:
+      - ./otm-api:/usr/src/otm-api
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8000:80"
+    depends_on:
+      - php-fpm
+  php-fpm:
+    build: ./docker/php-fpm
+    container_name: otm-php-fpm
+    working_dir: /usr/src/otm-api
+    volumes:
+      - ./otm-api:/usr/src/otm-api
+      - ./docker/php-fpm/php-ini-overrides.ini:/etc/php/7.4/fpm/conf.d/99-overrides.ini
+  node-passenger:
+    image: node:12-alpine
+    container_name: otm-node-passenger
+    working_dir: /usr/src/otm-passenger-client
+    volumes:
+      - ./otm-passenger-client:/usr/src/otm-passenger-client
+    command: /bin/sh -c "npm install && npm run serve"
+    ports:
+      - "8005:8080"
